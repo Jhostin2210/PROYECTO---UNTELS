@@ -1,0 +1,24 @@
+SMOKING_STATUS
+formerly smoked,1
+never smoked,0
+smokes,2
+
+GENDER
+Male,1
+Female,0
+
+EVER_MARRIED
+No,0
+Yes,1
+
+WORK_TYPE
+children,1
+Govt_job,2
+Never_worked,3
+Private,4
+Self-employed,5
+
+RESIDENCE_TYPE
+Rural,0
+Urban,1
+
