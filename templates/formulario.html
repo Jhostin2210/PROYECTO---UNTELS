@@ -1,6 +1,8 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🧠 Predicción de Accidente Cerebrovascular</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -15,6 +17,7 @@
             text-align: center;
             color: #2c3e50;
             margin-top: 30px;
+            font-size: 24px;
         }
         .container {
             max-width: 500px;
@@ -27,9 +30,10 @@
         label {
             font-weight: bold;
             color: #3f51b5;
+            font-size: 18px;
         }
         input[type="number"] {
-            width: 100%;
+            width: 45%;
             padding: 12px;
             margin: 8px 0 16px 0;
             border-radius: 10px;
@@ -39,6 +43,7 @@
         }
         .radio-group {
             margin-bottom: 16px;
+            font-size: 16px;
         }
         .radio-group label {
             font-weight: normal;
@@ -77,28 +82,115 @@
             margin: 0 auto 10px;
             width: 80px;
         }
+        .resultado {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f1f8e9;
+            border-left: 6px solid #7cb342;
+            border-radius: 10px;
+        }
+       .botonera {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-direction: row; /* <- cambia esto de 'column' a 'row' */
+        }
+        .botonera input[type="submit"],
+        .botonera button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            width: 48%;
+        }
+        .botonera input[type="submit"] {
+            background-color: #673ab7;
+            color: white;
+        }
+        .botonera input[type="submit"]:hover {
+            background-color: #512da8;
+        }
+        .botonera button {
+            background-color: #e53935;
+            color: white;
+        }
+        .botonera button:hover {
+            background-color: #c62828;
+        }
+
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 20px;
+            }
+            label {
+                font-size: 17px;
+            }
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <img class="logo" src="https://img.icons8.com/fluency/96/brain.png" alt="Logo Cerebro">
     <h2>🧠 Predicción de Riesgo de Accidente Cerebrovascular</h2>
     <div class="container">
-    <form method="post" action="/predecir_formulario">
-        {% for col in columnas %}
-            <label>{{ traducciones[col] if col in traducciones else col.replace('_', ' ').capitalize() }}:</label><br>
-            {% if col in opciones %}
-                <div class="radio-group">
-                    {% for texto, valor in opciones[col].items() %}
-                        <input type="radio" id="{{ col }}_{{ valor }}" name="{{ col }}" value="{{ valor }}" required>
-                        <label for="{{ col }}_{{ valor }}">{{ texto }}</label>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <input type="number" name="{{ col }}" step="any" required><br>
-            {% endif %}
-        {% endfor %}
-        <input type="submit" value="🔍 Predecir">
-    </form>
+        <form method="post" action="/predecir_formulario">
+            {% for col in columnas %}
+                <label>{{ traducciones[col] if col in traducciones else col.replace('_', ' ').capitalize() }}:</label><br>
+                {% if col in opciones %}
+                    <div class="radio-group">
+                        {% for texto, valor in opciones[col].items() %}
+                            <input type="radio" id="{{ col }}_{{ valor }}" name="{{ col }}" value="{{ valor }}" required>
+                            <label for="{{ col }}_{{ valor }}">{{ texto }}</label>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% if col == 'Avg_glucose_level' %}
+                        <input type="number" name="{{ col }}" step="any" min="50" max="300" required
+                            placeholder="Inserte de 50 a 300 mmol/L"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                    {% elif col == 'Bmi' %}
+                        <input type="number" name="{{ col }}" step="any" min="10" max="100" required
+                            placeholder="Inserte de 10 a 100"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                    {% elif col == 'Age' %}
+                        <input type="number" name="{{ col }}" step="any" min="0" max="150" required
+                             placeholder="Inserte edad en años"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                    {% else %}
+                        <input type="number" name="{{ col }}" step="any" min="0" required
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="botonera">
+                <input type="submit" value="🔍 Predecir">
+                <button type="button" onclick="window.location.href='/'">🧹 Limpiar Datos</button>
+            </div>
+        </form>
+
+        {% if resultado %}
+        <div class="resultado">
+            <h3>Resultado de Predicción</h3>
+            <p><strong>¿Riesgo de ACV?:</strong> {{ resultado.prediccion }}</p>
+            <p><strong>Probabilidad NO:</strong> {{ resultado.prob_no }}%</p>
+            <p><strong>Probabilidad SÍ:</strong> {{ resultado.prob_si }}%</p>
+
+            <form action="/descargar_pdf" method="post">
+                {% for key, value in resultado.datos.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+                <input type="hidden" name="pred" value="{{ resultado.pred }}">
+                <input type="hidden" name="prob_no" value="{{ resultado.prob_no }}">
+                <input type="hidden" name="prob_si" value="{{ resultado.prob_si }}">
+                <input type="submit" value="📄 Descargar Resultado en PDF">
+            </form>
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>
