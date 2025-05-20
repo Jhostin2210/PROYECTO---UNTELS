@@ -118,6 +118,15 @@
         .botonera button:hover {
             background-color: #c62828;
         }
+        input[type="email"] {
+    width: 50%;
+    padding: 12px;
+    margin: 8px 0 16px 0;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background-color: #f7f9fc;
+    font-size: 16px;
+}
 
         @media (max-width: 480px) {
             h2 {
@@ -143,30 +152,47 @@
                 {% if col in opciones %}
                     <div class="radio-group">
                         {% for texto, valor in opciones[col].items() %}
-                            <input type="radio" id="{{ col }}_{{ valor }}" name="{{ col }}" value="{{ valor }}" required>
+                        <input type="radio" id="{{ col }}_{{ valor }}" name="{{ col }}" value="{{ valor }}"
+                        {% if resultado and resultado.datos[col] == valor %}checked{% endif %} required>
                             <label for="{{ col }}_{{ valor }}">{{ texto }}</label>
                         {% endfor %}
                     </div>
                 {% else %}
                     {% if col == 'Avg_glucose_level' %}
                         <input type="number" name="{{ col }}" step="any" min="50" max="300" required
-                            placeholder="Inserte de 50 a 300 mmol/L"
-                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                        placeholder="Inserte de 50 a 300 mmol/L"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"
+                            value="{{ resultado.datos[col]|default('') if resultado else '' }}"><br>
+                        
+                            
                     {% elif col == 'Bmi' %}
                         <input type="number" name="{{ col }}" step="any" min="10" max="100" required
-                            placeholder="Inserte de 10 a 100"
-                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                        placeholder="Inserte de 10 a 100"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"
+                            value="{{ resultado.datos[col]|default('') if resultado else '' }}"><br>
+                        
+                            
                     {% elif col == 'Age' %}
                         <input type="number" name="{{ col }}" step="any" min="0" max="150" required
-                             placeholder="Inserte edad en años"
-                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                        placeholder="Inserte edad en años"
+                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"
+                            value="{{ resultado.datos[col]|default('') if resultado else '' }}"><br>
+                        
+                             
                     {% else %}
                         <input type="number" name="{{ col }}" step="any" min="0" required
-                            oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"><br>
+                        oninput="if (this.value < 0) { alert('No se permiten valores negativos'); this.value = ''; }"
+                        value="{{ resultado.datos[col]|default('') if resultado else '' }}"><br>
+                        
+                            
                     {% endif %}
                 {% endif %}
             {% endfor %}
 
+            <label>Correo electrónico para recibir resultado:</label><br>
+            <input type="email" name="email_usuario" placeholder="ejemplo@correo.com" required
+            value="{{ request.form['email_usuario'] if request.form.get('email_usuario') else '' }}"><br>
+      
             <div class="botonera">
                 <input type="submit" value="🔍 Predecir">
                 <button type="button" onclick="window.location.href='/'">🧹 Limpiar Datos</button>
@@ -189,6 +215,7 @@
                 <input type="hidden" name="prob_si" value="{{ resultado.prob_si }}">
                 <input type="submit" value="📄 Descargar Resultado en PDF">
             </form>
+
         </div>
         {% endif %}
     </div>

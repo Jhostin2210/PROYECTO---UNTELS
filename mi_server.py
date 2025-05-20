@@ -3,10 +3,11 @@ import joblib
 import pandas as pd
 import io
 from xhtml2pdf import pisa
+import requests
 
 app = Flask(__name__)
 
-modelo = joblib.load("modelo_knn.pkl")
+modelo = joblib.load("modelo_randomforest.pkl")
 columnas = joblib.load("columnas_modelo.pkl")
 
 opciones_categoricas = {
@@ -61,7 +62,44 @@ def predecir_formulario():
         "pred": int(pred)
     }
 
-    return render_template('formulario.html', columnas=columnas, opciones=opciones_categoricas, traducciones=traducciones, resultado=resultado)
+    email_usuario = request.form.get("email_usuario")
+
+    # Construir string con datos ingresados, en formato texto plano con saltos de línea
+    datos_str = ""
+    for clave, valor in datos.items():
+        nombre_mostrado = traducciones.get(
+            clave, clave.replace('_', ' ').capitalize())
+        if clave in opciones_categoricas:
+            inverso = {v: k for k, v in opciones_categoricas[clave].items()}
+            valor_mostrado = inverso.get(valor, valor)
+        else:
+            valor_mostrado = valor
+        datos_str += f"{nombre_mostrado}: {valor_mostrado}<br>"
+
+    # Armar contenido HTML con datos primero y luego resultados
+    contenido_html = f"""
+    <h3>Datos ingresados:</h3>
+    {datos_str}
+    <br>
+    <h2>Resultado de Predicción</h2>
+    <p><strong>Predicción:</strong> {resultado['prediccion']}</p>
+    <p><strong>Probabilidad NO:</strong> {resultado['prob_no']}%</p>
+    <p><strong>Probabilidad SÍ:</strong> {resultado['prob_si']}%</p>
+    """
+
+    if email_usuario:
+        codigo, respuesta = enviar_correo(
+            destinatario=email_usuario,
+            asunto="Resultado de predicción de ACV",
+            contenido_html=contenido_html
+        )
+        print(f"Correo enviado: {codigo}, Respuesta: {respuesta}")
+
+    return render_template('formulario.html',
+                           columnas=columnas,
+                           opciones=opciones_categoricas,
+                           traducciones=traducciones,
+                           resultado=resultado)
 
 @app.route('/descargar_pdf', methods=['POST'])
 def descargar_pdf():
@@ -104,6 +142,26 @@ def descargar_pdf():
     pisa.CreatePDF(html, dest=pdf_buffer)
     pdf_buffer.seek(0)
     return send_file(pdf_buffer, download_name="resultado_prediccion.pdf", as_attachment=True)
+
+def enviar_correo(destinatario, asunto, contenido_html):
+    # reemplázala con tu API Key real
+    api_key = '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'
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    data = {
+        "sender": {"name": "Predicción ACV", "email": "2113110269@untels.edu.pe"},
+        "to": [{"email": destinatario}],
+        "subject": asunto,
+        "htmlContent": contenido_html
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    return response.status_code, response.json()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
